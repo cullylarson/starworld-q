@@ -1,5 +1,6 @@
 import {compose} from '@cullylarson/f'
 import Q from '../esm/'
+import adapterMysql from '../esm/adapters/mysql'
 
 test('Builds a simple select from query', () => {
     const q = compose(
@@ -7,8 +8,8 @@ test('Builds a simple select from query', () => {
         Q.select('*')
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT * FROM test')
-    expect(Q.qToPlaceholders(q)).toEqual([])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * FROM test')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual([])
 })
 
 test('Builds a simple select from where query', () => {
@@ -18,8 +19,8 @@ test('Builds a simple select from where query', () => {
         Q.select('*')
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT * FROM test WHERE a = b')
-    expect(Q.qToPlaceholders(q)).toEqual([])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * FROM test WHERE a = b')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual([])
 })
 
 test('Builds a complex select from where query', () => {
@@ -29,8 +30,8 @@ test('Builds a complex select from where query', () => {
         Q.select(['* as a', 'test.blah as b'])
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b WHERE a = ?')
-    expect(Q.qToPlaceholders(q)).toEqual(['asdf'])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b WHERE a = ?')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['asdf'])
 })
 
 test('Builds a simple select from leftJoin where query', () => {
@@ -41,8 +42,8 @@ test('Builds a simple select from leftJoin where query', () => {
         Q.select(['* as a', 'test.blah as b'])
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b LEFT JOIN something s ON (s.id = b.id) WHERE a = ?')
-    expect(Q.qToPlaceholders(q)).toEqual(['asdf'])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b LEFT JOIN something s ON (s.id = b.id) WHERE a = ?')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['asdf'])
 })
 
 test('Builds a complex select from leftJoin where query', () => {
@@ -55,8 +56,8 @@ test('Builds a complex select from leftJoin where query', () => {
         Q.select(['* as a', 'test.blah as b'])
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b LEFT JOIN something s ON (s.id = b.id AND s.name = ?) LEFT JOIN foo f ON (f.id != ? AND f.key = ?) WHERE a = ? AND blue != ?')
-    expect(Q.qToPlaceholders(q)).toEqual(['Cully', '1', 'Foo', 'asdf', 'red'])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b LEFT JOIN something s ON (s.id = b.id AND s.name = ?) LEFT JOIN foo f ON (f.id != ? AND f.key = ?) WHERE a = ? AND blue != ?')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['Cully', '1', 'Foo', 'asdf', 'red'])
 })
 
 test('Builds a complex select from where query order limit offset', () => {
@@ -69,8 +70,8 @@ test('Builds a complex select from where query order limit offset', () => {
         Q.select(['* as a', 'test.blah as b'])
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b WHERE a = ? ORDER BY blue ASC, red DESC LIMIT ? OFFSET ?')
-    expect(Q.qToPlaceholders(q)).toEqual(['asdf', 3, 100])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b WHERE a = ? ORDER BY blue ASC, red DESC LIMIT ? OFFSET ?')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['asdf', 3, 100])
 })
 
 test('Builds another complex select from where query order limit offset', () => {
@@ -88,8 +89,8 @@ test('Builds another complex select from where query order limit offset', () => 
         Q.select('* as a')
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b WHERE a = ? AND some LIKE ? AND a = b ORDER BY blue ASC, red DESC LIMIT ? OFFSET ?')
-    expect(Q.qToPlaceholders(q)).toEqual(['asdf', 'thing', 3, 100])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b WHERE a = ? AND some LIKE ? AND a = b ORDER BY blue ASC, red DESC LIMIT ? OFFSET ?')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['asdf', 'thing', 3, 100])
 })
 
 test('Builds a complex select from where query groupby order limit offset', () => {
@@ -105,8 +106,8 @@ test('Builds a complex select from where query groupby order limit offset', () =
         Q.select(['SUM(a)', 'test.blah as b'])
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT SUM(a), test.blah as b FROM test t, blah b WHERE a = ? GROUP BY a, b, c, d ORDER BY blue ASC, red DESC LIMIT ? OFFSET ?')
-    expect(Q.qToPlaceholders(q)).toEqual(['asdf', 3, 100])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT SUM(a), test.blah as b FROM test t, blah b WHERE a = ? GROUP BY a, b, c, d ORDER BY blue ASC, red DESC LIMIT ? OFFSET ?')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['asdf', 3, 100])
 })
 
 test('Combines conditions simple', () => {
@@ -117,8 +118,8 @@ test('Combines conditions simple', () => {
         Q.select('*')
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT * FROM blah WHERE a = b AND (c = ? OR d = ?)')
-    expect(Q.qToPlaceholders(q)).toEqual(['CCC', 'DDD'])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * FROM blah WHERE a = b AND (c = ? OR d = ?)')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['CCC', 'DDD'])
 })
 
 test('Combines conditions complex', () => {
@@ -141,8 +142,8 @@ test('Combines conditions complex', () => {
         Q.select('*')
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT * FROM blah WHERE a = b AND (c = ? OR d = ? OR (e = ? AND g = 2 AND (h != ? OR i = 27 OR j = ?)))')
-    expect(Q.qToPlaceholders(q)).toEqual(['CCC', 'DDD', 'EEE', 'HHH', 'JJJ'])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * FROM blah WHERE a = b AND (c = ? OR d = ? OR (e = ? AND g = 2 AND (h != ? OR i = 27 OR j = ?)))')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['CCC', 'DDD', 'EEE', 'HHH', 'JJJ'])
 })
 
 test('Combines conditions complex two', () => {
@@ -165,8 +166,8 @@ test('Combines conditions complex two', () => {
         ])
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT c.* FROM campaigns c LEFT JOIN campaignReports cr ON (cr.campaignId = c.id) WHERE c.startDate <= ? AND (cr.id IS NULL OR cr.isFinal = FALSE OR cr.isCancelledWhenMarkedFinal != c.isCancelled OR cr.startDateWhenMarkedFinal != c.startDate OR cr.endDateWhenMarkedFinal != c.endDate OR cr.created <= ?)')
-    expect(Q.qToPlaceholders(q)).toEqual([onlyUpdateBeforeDate, onlyUpdateBeforeDate])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT c.* FROM campaigns c LEFT JOIN campaignReports cr ON (cr.campaignId = c.id) WHERE c.startDate <= ? AND (cr.id IS NULL OR cr.isFinal = FALSE OR cr.isCancelledWhenMarkedFinal != c.isCancelled OR cr.startDateWhenMarkedFinal != c.startDate OR cr.endDateWhenMarkedFinal != c.endDate OR cr.created <= ?)')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual([onlyUpdateBeforeDate, onlyUpdateBeforeDate])
 })
 
 test('Combines conditions complex three', () => {
@@ -189,8 +190,8 @@ test('Combines conditions complex three', () => {
         ])
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT c.* FROM campaigns c LEFT JOIN campaignReports cr ON (cr.campaignId = c.id) WHERE c.startDate <= ? AND (cr.id IS NULL OR cr.isFinal = FALSE OR cr.isCancelledWhenMarkedFinal != c.isCancelled OR cr.startDateWhenMarkedFinal != c.startDate OR cr.endDateWhenMarkedFinal != c.endDate OR cr.created <= ?)')
-    expect(Q.qToPlaceholders(q)).toEqual([onlyUpdateBeforeDate, onlyUpdateBeforeDate])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT c.* FROM campaigns c LEFT JOIN campaignReports cr ON (cr.campaignId = c.id) WHERE c.startDate <= ? AND (cr.id IS NULL OR cr.isFinal = FALSE OR cr.isCancelledWhenMarkedFinal != c.isCancelled OR cr.startDateWhenMarkedFinal != c.startDate OR cr.endDateWhenMarkedFinal != c.endDate OR cr.created <= ?)')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual([onlyUpdateBeforeDate, onlyUpdateBeforeDate])
 })
 
 test('Combines conditions with mutiple where', () => {
@@ -218,6 +219,6 @@ test('Combines conditions with mutiple where', () => {
         )
     )({})
 
-    expect(Q.qToString(q)).toEqual('SELECT c.* FROM campaigns c LEFT JOIN campaignReports cr ON (cr.campaignId = c.id) WHERE (term = ? OR term = ? OR term = ?) AND a = b AND c.startDate <= ? AND (cr.id IS NULL OR cr.isFinal = FALSE)')
-    expect(Q.qToPlaceholders(q)).toEqual([term, '"' + term + '"', '\'' + term + '\'', onlyUpdateBeforeDate])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT c.* FROM campaigns c LEFT JOIN campaignReports cr ON (cr.campaignId = c.id) WHERE (term = ? OR term = ? OR term = ?) AND a = b AND c.startDate <= ? AND (cr.id IS NULL OR cr.isFinal = FALSE)')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual([term, '"' + term + '"', '\'' + term + '\'', onlyUpdateBeforeDate])
 })
