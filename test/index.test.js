@@ -34,6 +34,17 @@ test('Builds a complex select from where query', () => {
     expect(adapterMysql.qToPlaceholders(q)).toEqual(['asdf'])
 })
 
+test('Builds a complex select from where query, using rawl SQL', () => {
+    const q = compose(
+        Q.where(['LEAST(?, ?, ?) > ?', [1, 2, 3, 0]]),
+        Q.from(['test t', 'blah b']),
+        Q.select(['* as a', 'test.blah as b'])
+    )({})
+
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b WHERE (LEAST(?, ?, ?) > ?)')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual([1, 2, 3, 0])
+})
+
 test('Builds a simple select from leftJoin where query', () => {
     const q = compose(
         Q.where(['a', '=', 'asdf']),
@@ -207,6 +218,7 @@ test('Combines conditions with mutiple where', () => {
             Q.or([
                 'cr.id IS NULL',
                 'cr.isFinal = FALSE',
+                ['LEAST(?, ?, ?) > ?', [1, 2, 3, 0]],
             ]),
         ]),
         Q.where('a = b'),
@@ -219,6 +231,6 @@ test('Combines conditions with mutiple where', () => {
         )
     )({})
 
-    expect(adapterMysql.qToString(q)).toEqual('SELECT c.* FROM campaigns c LEFT JOIN campaignReports cr ON (cr.campaignId = c.id) WHERE (term = ? OR term = ? OR term = ?) AND a = b AND c.startDate <= ? AND (cr.id IS NULL OR cr.isFinal = FALSE)')
-    expect(adapterMysql.qToPlaceholders(q)).toEqual([term, '"' + term + '"', '\'' + term + '\'', onlyUpdateBeforeDate])
+    expect(adapterMysql.qToString(q)).toEqual('SELECT c.* FROM campaigns c LEFT JOIN campaignReports cr ON (cr.campaignId = c.id) WHERE (term = ? OR term = ? OR term = ?) AND a = b AND c.startDate <= ? AND (cr.id IS NULL OR cr.isFinal = FALSE OR (LEAST(?, ?, ?) > ?))')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual([term, '"' + term + '"', '\'' + term + '\'', onlyUpdateBeforeDate, 1, 2, 3, 0])
 })

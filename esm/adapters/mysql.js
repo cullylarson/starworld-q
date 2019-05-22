@@ -33,11 +33,15 @@ const qToString = q => {
         }
 
         const wherePieces = xs => xs.map(x => {
-            return Array.isArray(x)
-                ? x.length === 1
+            return !Array.isArray(x)
+                ? combineConds(x)
+                : x.length === 1
                     ? x[0]
-                    : `${x[0]} ${x[1]} ?`
-                : combineConds(x)
+                    : x.length === 2
+                        // the first argument is a raw SQL string, the second is params to fill in for placeholders. surround
+                        // with parens in case its a fancy string.
+                        ? `(${x[0]})`
+                        : `${x[0]} ${x[1]} ?`
         })
 
         return 'WHERE ' + wherePieces(q.where).join(' AND ')
@@ -75,11 +79,13 @@ const qToString = q => {
 
 const qToPlaceholders = q => {
     const getWherePlaceholders = xs => flatten(xs
-        .filter(x => x.conds || x.length > 2)
+        .filter(x => x.conds || x.length > 1)
         .map(x => {
-            return Array.isArray(x)
-                ? x[2]
-                : shallowFlatten(getWherePlaceholders(x.conds))
+            return !Array.isArray(x)
+                ? shallowFlatten(getWherePlaceholders(x.conds))
+                : x.length === 2
+                    ? x[1]
+                    : x[2]
         }))
 
     const wherePlaceholders = q.where && q.where.length ? getWherePlaceholders(q.where) : []
