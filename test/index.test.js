@@ -234,3 +234,21 @@ test('Combines conditions with mutiple where', () => {
     expect(adapterMysql.qToString(q)).toEqual('SELECT c.* FROM campaigns c LEFT JOIN campaignReports cr ON (cr.campaignId = c.id) WHERE (term = ? OR term = ? OR term = ?) AND a = b AND c.startDate <= ? AND (cr.id IS NULL OR cr.isFinal = FALSE OR (LEAST(?, ?, ?) > ?))')
     expect(adapterMysql.qToPlaceholders(q)).toEqual([term, '"' + term + '"', '\'' + term + '\'', onlyUpdateBeforeDate, 1, 2, 3, 0])
 })
+
+test.only('Can use select subqueries', () => {
+    const subQ = compose(
+        Q.where(['foo = ?', 'hoops']),
+        Q.from('asdf a'),
+        Q.select('a.id'),
+    )({})
+
+    const q = compose(
+        Q.where([`id IN (${adapterMysql.qToString(subQ)})`, adapterMysql.qToPlaceholders(subQ)]),
+        Q.where(['dreams', '=', 'hopes']),
+        Q.from('test'),
+        Q.select('*'),
+    )({})
+
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * FROM test WHERE dreams = ? AND (id IN (SELECT a.id FROM asdf a WHERE (foo = ?)))')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['hopes', 'hoops'])
+})
