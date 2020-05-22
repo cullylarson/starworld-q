@@ -1,4 +1,4 @@
-import {compose, curry, reduce, ifElse, identity, map, filter, liftA, get} from '@cullylarson/f'
+import {compose, curry, reduce, ifElse, identity, map, get} from '@cullylarson/f'
 
 const shallowFlatten = reduce((acc, x) => (Array.isArray(x) ? [...acc, ...x] : [...acc, x]), [])
 
@@ -51,15 +51,19 @@ const qToString = q => {
         if(!q.leftJoin || !q.leftJoin.length) return ''
 
         const joinPieces = q.leftJoin.map(x => {
-            const onPieces = liftA(get(1, [], x))
-                .map(x => {
-                    return Array.isArray(x)
-                        ? `${x[0]} ${x[1]} ?`
-                        : x
-                })
-                .join(' AND ')
+            const onPieces = xs => xs.map(x => {
+                return !Array.isArray(x)
+                    ? x
+                    : x.length === 1
+                        ? x[0]
+                        : x.length === 2
+                            // the first argument is a raw SQL string, the second is params to fill in for placeholders. surround
+                            // with parens in case its a fancy string.
+                            ? `(${x[0]})`
+                            : `${x[0]} ${x[1]} ?`
+            })
 
-            return `LEFT JOIN ${x[0]} ON (${onPieces})`
+            return `LEFT JOIN ${x[0]} ON (${onPieces(x[1]).join(' AND ')})`
         })
 
         return joinPieces.join(' ')
@@ -88,14 +92,22 @@ const qToPlaceholders = q => {
                     : x[2]
         }))
 
+    const getOnPlaceholders = xs => flatten(xs
+        .map(x => {
+            return !Array.isArray(x)
+                ? []
+                : x.length === 2
+                    ? x[1]
+                    : x[2]
+        }))
+
     const wherePlaceholders = q.where && q.where.length ? getWherePlaceholders(q.where) : []
 
     const leftJoinPlaceholders = q.leftJoin && q.leftJoin.length
         ? compose(
-            map(x => x[2]),
-            filter(x => Array.isArray(x) && x.length > 2),
             shallowFlatten,
-            map(get(1, []))
+            map(getOnPlaceholders),
+            map(get(1, [])),
         )(q.leftJoin)
         : []
 

@@ -57,6 +57,18 @@ test('Builds a simple select from leftJoin where query', () => {
     expect(adapterMysql.qToPlaceholders(q)).toEqual(['asdf'])
 })
 
+test('Builds a simple select from leftJoin where query with leftJoin condition having a placeholder', () => {
+    const q = compose(
+        Q.where(['a', '=', 'asdf']),
+        Q.leftJoin('something s', ['s.id = b.id', ['f = ?', 'leftJoinPlaceholder']]),
+        Q.from(['test t', 'blah b']),
+        Q.select(['* as a', 'test.blah as b'])
+    )({})
+
+    expect(adapterMysql.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b LEFT JOIN something s ON (s.id = b.id AND (f = ?)) WHERE a = ?')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['leftJoinPlaceholder', 'asdf'])
+})
+
 test('Builds a complex select from leftJoin where query', () => {
     const q = compose(
         Q.where(['blue', '!=', 'red']),
@@ -235,7 +247,7 @@ test('Combines conditions with mutiple where', () => {
     expect(adapterMysql.qToPlaceholders(q)).toEqual([term, '"' + term + '"', '\'' + term + '\'', onlyUpdateBeforeDate, 1, 2, 3, 0])
 })
 
-test.only('Can use select subqueries', () => {
+test('Can use select subqueries', () => {
     const subQ = compose(
         Q.where(['foo = ?', 'hoops']),
         Q.from('asdf a'),

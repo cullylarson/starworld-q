@@ -1,13 +1,13 @@
 {
   "name": "@cullylarson/q",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A compossible query builder library.",
   "main": "cjs/",
   "module": "esm/",
   "scripts": {
     "test": "jest ./test",
     "clean": "rm -rf cjs",
-    "watch": "esw --color --watch ./esm ./test",
+    "lint": "esw --color --watch ./esm ./test",
     "build": "npm run clean && babel esm --out-dir cjs",
     "prepare": "npm test && npm run build"
   },
