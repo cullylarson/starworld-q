@@ -14,12 +14,17 @@ const appendFlat = curry((toAppend, x) => {
 })
 
 const qToString = q => {
-    const selectStr = q => q.select && q.select.length ? 'SELECT ' + q.select.join(', ') : ''
     const fromStr = q => q.from && q.from.length ? 'FROM ' + q.from.join(', ') : ''
     const orderStr = q => q.order && q.order.length ? 'ORDER BY ' + q.order.join(', ') : ''
     const limitStr = q => q.hasOwnProperty('limit') ? 'LIMIT ?' : ''
     const offsetStr = q => q.hasOwnProperty('offset') ? 'OFFSET ?' : ''
     const groupByStr = q => q.groupBy && q.groupBy.length ? 'GROUP BY ' + q.groupBy.join(', ') : ''
+
+    const selectStr = q => {
+        if(!q.select || !q.select.length) return ''
+
+        return 'SELECT ' + flatten(q.select.map(x => x[0])).join(', ')
+    }
 
     const whereStr = q => {
         if(!q.where || !q.where.length) return ''
@@ -101,7 +106,11 @@ const qToPlaceholders = q => {
                     : x[2]
         }))
 
+    const getSelectPlaceholders = xs => flatten(xs.map(x => x[1]))
+
     const wherePlaceholders = q.where && q.where.length ? getWherePlaceholders(q.where) : []
+
+    const selectPlaceholders = q.select && q.select.length ? getSelectPlaceholders(q.select) : []
 
     const leftJoinPlaceholders = q.leftJoin && q.leftJoin.length
         ? compose(
@@ -130,6 +139,11 @@ const qToPlaceholders = q => {
         ifElse(
             () => leftJoinPlaceholders.length > 0,
             appendFlat(leftJoinPlaceholders),
+            identity
+        ),
+        ifElse(
+            () => selectPlaceholders.length > 0,
+            append(selectPlaceholders),
             identity
         )
     )([])

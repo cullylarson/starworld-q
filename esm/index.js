@@ -27,7 +27,13 @@ const appendAt = (key, toAppend, x) => {
 const select = curry((xs, q) => {
     xs = liftA(xs)
 
-    return appendAt('select', xs, q)
+    return appendAt('select', [[xs, []]], q)
+})
+
+const selectParams = curry((x, params, q) => {
+    params = liftA(params)
+
+    return appendAt('select', [[[x], params]], q)
 })
 
 const from = curry((xs, q) => {
@@ -86,6 +92,7 @@ const and = (conds) => combineConditions('and', conds)
 
 export default {
     select,
+    selectParams,
     from,
     leftJoin,
     where,

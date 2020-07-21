@@ -45,6 +45,18 @@ test('Builds a complex select from where query, using rawl SQL', () => {
     expect(adapterMysql.qToPlaceholders(q)).toEqual([1, 2, 3, 0])
 })
 
+test('Builds a complex select from where query, with params in the select.', () => {
+    const q = compose(
+        Q.where(['LEAST(?, ?, ?) > ?', [1, 2, 3, 0]]),
+        Q.from(['test t', 'blah b']),
+        Q.select(['* as a', 'test.blah as b']),
+        Q.selectParams('MATCH a AGAINST (? IN NATURAL LANGUAGE MODE) as score', ['blueberries']),
+    )({})
+
+    expect(adapterMysql.qToString(q)).toEqual('SELECT MATCH a AGAINST (? IN NATURAL LANGUAGE MODE) as score, * as a, test.blah as b FROM test t, blah b WHERE (LEAST(?, ?, ?) > ?)')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['blueberries', 1, 2, 3, 0])
+})
+
 test('Builds a simple select from leftJoin where query', () => {
     const q = compose(
         Q.where(['a', '=', 'asdf']),
@@ -81,6 +93,20 @@ test('Builds a complex select from leftJoin where query', () => {
 
     expect(adapterMysql.qToString(q)).toEqual('SELECT * as a, test.blah as b FROM test t, blah b LEFT JOIN something s ON (s.id = b.id AND s.name = ?) LEFT JOIN foo f ON (f.id != ? AND f.key = ?) WHERE a = ? AND blue != ?')
     expect(adapterMysql.qToPlaceholders(q)).toEqual(['Cully', '1', 'Foo', 'asdf', 'red'])
+})
+
+test('Builds a complex select from leftJoin where query, with parameters in th select.', () => {
+    const q = compose(
+        Q.where(['blue', '!=', 'red']),
+        Q.where(['a', '=', 'asdf']),
+        Q.leftJoin('foo f', [['f.id', '!=', '1'], ['f.key', '=', 'Foo']]),
+        Q.leftJoin('something s', ['s.id = b.id', ['s.name', '=', 'Cully']]),
+        Q.from(['test t', 'blah b']),
+        Q.selectParams('? as hoops', ['dupes'])
+    )({})
+
+    expect(adapterMysql.qToString(q)).toEqual('SELECT ? as hoops FROM test t, blah b LEFT JOIN something s ON (s.id = b.id AND s.name = ?) LEFT JOIN foo f ON (f.id != ? AND f.key = ?) WHERE a = ? AND blue != ?')
+    expect(adapterMysql.qToPlaceholders(q)).toEqual(['dupes', 'Cully', '1', 'Foo', 'asdf', 'red'])
 })
 
 test('Builds a complex select from where query order limit offset', () => {
